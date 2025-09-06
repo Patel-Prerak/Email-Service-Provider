@@ -6,21 +6,20 @@ export class EmailAnalysisService {
     const receivedHeaders = headers.received || [];
     const chain: string[] = [];
 
-    // Received headers are usually in reverse order (last to first)
-    // We reverse them to get the correct order (first to last)
+
     const receivedArray = Array.isArray(receivedHeaders) ? receivedHeaders : [receivedHeaders];
 
     for (const received of receivedArray.reverse()) {
-      // Try different patterns to extract server information
+
       let server: string | null = null;
 
-      // Pattern 1: from server.name.com
+
       const fromMatch = received.match(/from\s+([^\s;]+)/i);
       if (fromMatch) {
         server = fromMatch[1];
       }
 
-      // Pattern 2: by server.name.com
+     
       if (!server) {
         const byMatch = received.match(/by\s+([^\s;]+)/i);
         if (byMatch) {
@@ -28,7 +27,7 @@ export class EmailAnalysisService {
         }
       }
 
-      // Pattern 3: Extract domain from email addresses or IPs
+      
       if (!server) {
         const domainMatch = received.match(/([a-zA-Z0-9-]+\.[a-zA-Z]{2,})/);
         if (domainMatch) {
@@ -36,20 +35,20 @@ export class EmailAnalysisService {
         }
       }
 
-      // Clean up the server name
+     
       if (server) {
-        // Remove brackets and clean up
+        
         server = server.replace(/[()[\]]/g, '');
-        // Remove port numbers
+       
         server = server.replace(/:\d+$/, '');
-        // Skip localhost and common internal servers
+       
         if (!server.includes('localhost') && !server.includes('127.0.0.1') && server.length > 3) {
           chain.push(server);
         }
       }
     }
 
-    // Remove duplicates while preserving order
+    
     const uniqueChain = chain.filter((server, index) => chain.indexOf(server) === index);
 
     return uniqueChain;
@@ -59,7 +58,7 @@ export class EmailAnalysisService {
     const receivedHeaders = headers.received || [];
     const receivedString = Array.isArray(receivedHeaders) ? receivedHeaders.join(' ').toLowerCase() : receivedHeaders.toLowerCase();
 
-    // Check for ESP signatures in received headers
+   
     if (receivedString.includes('google.com') || receivedString.includes('gmail.com') || receivedString.includes('googlemail.com')) {
       return 'Gmail';
     }
@@ -106,7 +105,7 @@ export class EmailAnalysisService {
       return 'Campaign Monitor';
     }
 
-    // Check for other common patterns
+    
     if (receivedString.includes('smtp.') || receivedString.includes('mail.')) {
       return 'Generic SMTP';
     }
