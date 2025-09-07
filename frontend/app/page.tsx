@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import styles from "./page.module.css";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
 interface AnalyzedEmail {
   _id: string;
   subject: string;
@@ -25,7 +27,7 @@ export default function Home() {
 
   const fetchTestEmail = async () => {
     try {
-      const response = await fetch('http://localhost:3001/test-email');
+      const response = await fetch(`${BACKEND_URL}/test-email`);
       const data = await response.json();
       setTestEmail(data.email);
     } catch (error) {
@@ -35,7 +37,7 @@ export default function Home() {
 
   const fetchEmails = async () => {
     try {
-      const response = await fetch('http://localhost:3001/emails');
+      const response = await fetch(`${BACKEND_URL}/emails`);
       const data = await response.json();
       setEmails(data);
     } catch (error) {
