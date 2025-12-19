@@ -15,6 +15,7 @@ const config_1 = require("@nestjs/config");
 const schedule_1 = require("@nestjs/schedule");
 const imap_service_1 = require("./imap.service");
 const email_analysis_service_1 = require("./email-analysis.service");
+const malware_detection_service_1 = require("./malware-detection.service");
 const email_schema_1 = require("./schemas/email.schema");
 let AppModule = class AppModule {
 };
@@ -25,12 +26,15 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
             }),
-            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/email-analyzer'),
+            mongoose_1.MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/email-analyzer', {
+                serverSelectionTimeoutMS: 5000,
+                socketTimeoutMS: 5000,
+            }),
             mongoose_1.MongooseModule.forFeature([{ name: email_schema_1.AnalyzedEmail.name, schema: email_schema_1.AnalyzedEmailSchema }]),
             schedule_1.ScheduleModule.forRoot(),
         ],
         controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService, imap_service_1.ImapService, email_analysis_service_1.EmailAnalysisService],
+        providers: [app_service_1.AppService, imap_service_1.ImapService, email_analysis_service_1.EmailAnalysisService, malware_detection_service_1.MalwareDetectionService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

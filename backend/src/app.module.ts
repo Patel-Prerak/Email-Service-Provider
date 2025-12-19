@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ImapService } from './imap.service';
 import { EmailAnalysisService } from './email-analysis.service';
+import { MalwareDetectionService } from './malware-detection.service';
 import { AnalyzedEmail, AnalyzedEmailSchema } from './schemas/email.schema';
 
 @Module({
@@ -13,11 +14,14 @@ import { AnalyzedEmail, AnalyzedEmailSchema } from './schemas/email.schema';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/email-analyzer'),
+    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/email-analyzer', {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 5000,
+    }),
     MongooseModule.forFeature([{ name: AnalyzedEmail.name, schema: AnalyzedEmailSchema }]),
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [AppService, ImapService, EmailAnalysisService],
+  providers: [AppService, ImapService, EmailAnalysisService, MalwareDetectionService],
 })
 export class AppModule {}

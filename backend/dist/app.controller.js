@@ -19,13 +19,16 @@ const config_1 = require("@nestjs/config");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const email_schema_1 = require("./schemas/email.schema");
+const malware_detection_service_1 = require("./malware-detection.service");
 let AppController = class AppController {
     appService;
     configService;
+    malwareDetectionService;
     analyzedEmailModel;
-    constructor(appService, configService, analyzedEmailModel) {
+    constructor(appService, configService, malwareDetectionService, analyzedEmailModel) {
         this.appService = appService;
         this.configService = configService;
+        this.malwareDetectionService = malwareDetectionService;
         this.analyzedEmailModel = analyzedEmailModel;
     }
     getHello() {
@@ -37,6 +40,15 @@ let AppController = class AppController {
     getTestEmail() {
         const email = this.configService.get('IMAP_USER');
         return { email: email || 'Configure IMAP_USER in .env file' };
+    }
+    async analyzeMalware(emailData) {
+        return this.malwareDetectionService.detectMalware(emailData);
+    }
+    async analyzeBatch(emails) {
+        return this.malwareDetectionService.detectMalwareBatch(emails);
+    }
+    getHealth() {
+        return { status: 'ok', timestamp: new Date() };
     }
 };
 exports.AppController = AppController;
@@ -58,11 +70,32 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "getTestEmail", null);
+__decorate([
+    (0, common_1.Post)('analyze-malware'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "analyzeMalware", null);
+__decorate([
+    (0, common_1.Post)('analyze-batch'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Array]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "analyzeBatch", null);
+__decorate([
+    (0, common_1.Get)('health'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "getHealth", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
-    __param(2, (0, mongoose_1.InjectModel)(email_schema_1.AnalyzedEmail.name)),
+    __param(3, (0, mongoose_1.InjectModel)(email_schema_1.AnalyzedEmail.name)),
     __metadata("design:paramtypes", [app_service_1.AppService,
         config_1.ConfigService,
+        malware_detection_service_1.MalwareDetectionService,
         mongoose_2.Model])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map

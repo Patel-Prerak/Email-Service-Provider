@@ -55,15 +55,18 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const email_schema_1 = require("./schemas/email.schema");
 const email_analysis_service_1 = require("./email-analysis.service");
+const malware_detection_service_1 = require("./malware-detection.service");
 let ImapService = ImapService_1 = class ImapService {
     configService;
     analysisService;
+    malwareDetectionService;
     analyzedEmailModel;
     logger = new common_1.Logger(ImapService_1.name);
     isRunning = false;
-    constructor(configService, analysisService, analyzedEmailModel) {
+    constructor(configService, analysisService, malwareDetectionService, analyzedEmailModel) {
         this.configService = configService;
         this.analysisService = analysisService;
+        this.malwareDetectionService = malwareDetectionService;
         this.analyzedEmailModel = analyzedEmailModel;
     }
     async handleCron() {
@@ -89,24 +92,43 @@ let ImapService = ImapService_1 = class ImapService {
             this.logger.log('Successfully connected to IMAP server.');
             await connection.openBox('INBOX');
             this.logger.log('Inbox opened.');
-            const searchCriteria = ['UNSEEN', ['HEADER', 'SUBJECT', 'analyzer-']];
+            const searchCriteria = ['UNSEEN'];
             const fetchOptions = { bodies: ['HEADER', 'TEXT'], markSeen: true };
-            const messages = await connection.search(searchCriteria, fetchOptions);
-            this.logger.log(`Found ${messages.length} new email(s).`);
+            let messages = await connection.search(searchCriteria, fetchOptions);
+            this.logger.log(`Found ${messages.length} new unseen email(s).`);
             for (const item of messages) {
                 const header = item.parts.find(part => part.which === 'HEADER').body;
                 this.logger.log('Raw header:', JSON.stringify(header));
                 const subject = header.subject ? header.subject[0] : undefined;
                 this.logger.log(`Email subject found: ${subject}`);
-                if (subject && subject.startsWith('analyzer-')) {
+                if (subject) {
                     this.logger.log(`Processing email with subject: ${subject}`);
                     const receivingChain = this.analysisService.extractReceivingChain(header);
                     const esp = this.analysisService.detectEsp(header);
+                    let phishingResult = null;
+                    try {
+                        const emailBody = item.parts.find(part => part.which === 'TEXT')?.body || '';
+                        phishingResult = await this.malwareDetectionService.detectMalware({
+                            subject: subject,
+                            body: emailBody,
+                            receivingChain: receivingChain,
+                            esp: esp,
+                            spfPass: header['authentication-results'] && header['authentication-results'].includes('spf=pass'),
+                            dkimPass: header['authentication-results'] && header['authentication-results'].includes('dkim=pass'),
+                            dmarcPass: header['authentication-results'] && header['authentication-results'].includes('dmarc=pass'),
+                        });
+                        this.logger.log(`Phishing detection result: ${JSON.stringify(phishingResult)}`);
+                    }
+                    catch (error) {
+                        this.logger.warn(`Phishing detection failed for ${subject}: ${error?.message || error}`);
+                        phishingResult = { is_phishing: false, confidence: 0, risk_level: 'UNKNOWN', message: error?.message || String(error) };
+                    }
                     const newAnalysis = new this.analyzedEmailModel({
                         subject: subject,
                         receivingChain,
                         esp,
                         rawHeaders: header,
+                        malwareResult: phishingResult,
                     });
                     await newAnalysis.save();
                     this.logger.log(`✅ Successfully saved analysis for ${subject}`);
@@ -141,9 +163,10 @@ __decorate([
 ], ImapService.prototype, "handleCron", null);
 exports.ImapService = ImapService = ImapService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __param(2, (0, mongoose_1.InjectModel)(email_schema_1.AnalyzedEmail.name)),
+    __param(3, (0, mongoose_1.InjectModel)(email_schema_1.AnalyzedEmail.name)),
     __metadata("design:paramtypes", [config_1.ConfigService,
         email_analysis_service_1.EmailAnalysisService,
+        malware_detection_service_1.MalwareDetectionService,
         mongoose_2.Model])
 ], ImapService);
 //# sourceMappingURL=imap.service.js.map

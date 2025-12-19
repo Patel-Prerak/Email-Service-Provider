@@ -17,8 +17,12 @@ export class AnalyzedEmail {
   @Prop({ type: Object })
   rawHeaders: Record<string, any>;
 
+  @Prop({ type: Object })
+  malwareResult: Record<string, any>;
+
   @Prop({ default: Date.now })
   createdAt: Date;
 }
 
 export const AnalyzedEmailSchema = SchemaFactory.createForClass(AnalyzedEmail);
+

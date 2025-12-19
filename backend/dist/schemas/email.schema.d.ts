@@ -5,6 +5,7 @@ export declare class AnalyzedEmail {
     receivingChain: string[];
     esp: string;
     rawHeaders: Record<string, any>;
+    malwareResult: Record<string, any>;
     createdAt: Date;
 }
 export declare const AnalyzedEmailSchema: import("mongoose").Schema<AnalyzedEmail, import("mongoose").Model<AnalyzedEmail, any, any, any, Document<unknown, any, AnalyzedEmail, any, {}> & AnalyzedEmail & {

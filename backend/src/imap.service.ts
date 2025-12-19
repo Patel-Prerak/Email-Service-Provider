@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AnalyzedEmail } from './schemas/email.schema'; 
 import { EmailAnalysisService } from './email-analysis.service'; 
+import { MalwareDetectionService } from './malware-detection.service';
 
 @Injectable()
 export class ImapService {
@@ -19,6 +20,7 @@ export class ImapService {
   constructor(
     private readonly configService: ConfigService,
     private readonly analysisService: EmailAnalysisService,
+     private readonly malwareDetectionService: MalwareDetectionService,
     @InjectModel(AnalyzedEmail.name) private analyzedEmailModel: Model<AnalyzedEmail>,
   ) {}
 
@@ -53,12 +55,14 @@ export class ImapService {
       await connection.openBox('INBOX');
       this.logger.log('Inbox opened.');
 
-      const searchCriteria = ['UNSEEN', ['HEADER', 'SUBJECT', 'analyzer-']];
+      // Search for only UNSEEN emails
+      const searchCriteria = ['UNSEEN'];
      
       const fetchOptions = { bodies: ['HEADER', 'TEXT'], markSeen: true };
 
-      const messages = await connection.search(searchCriteria, fetchOptions);
-      this.logger.log(`Found ${messages.length} new email(s).`);
+      let messages = await connection.search(searchCriteria, fetchOptions);
+      
+      this.logger.log(`Found ${messages.length} new unseen email(s).`);
 
       for (const item of messages) {
         
@@ -72,18 +76,39 @@ export class ImapService {
         this.logger.log(`Email subject found: ${subject}`);
 
       
-        if (subject && subject.startsWith('analyzer-')) {
+        // Process ALL emails, not just those with 'analyzer-' prefix
+        if (subject) {
           this.logger.log(`Processing email with subject: ${subject}`);
 
           
           const receivingChain = this.analysisService.extractReceivingChain(header);
           const esp = this.analysisService.detectEsp(header);
 
+          // Run phishing detection with header features
+          let phishingResult: any = null;
+          try {
+            const emailBody = item.parts.find(part => part.which === 'TEXT')?.body || '';
+            phishingResult = await this.malwareDetectionService.detectMalware({
+              subject: subject,
+              body: emailBody,
+              receivingChain: receivingChain,
+              esp: esp,
+              spfPass: header['authentication-results'] && header['authentication-results'].includes('spf=pass'),
+              dkimPass: header['authentication-results'] && header['authentication-results'].includes('dkim=pass'),
+              dmarcPass: header['authentication-results'] && header['authentication-results'].includes('dmarc=pass'),
+            });
+            this.logger.log(`Phishing detection result: ${JSON.stringify(phishingResult)}`);
+          } catch (error) {
+            this.logger.warn(`Phishing detection failed for ${subject}: ${error?.message || error}`);
+            phishingResult = { is_phishing: false, confidence: 0, risk_level: 'UNKNOWN', message: error?.message || String(error) };
+          }
+
           const newAnalysis = new this.analyzedEmailModel({
             subject: subject,
             receivingChain,
             esp,
-            rawHeaders: header, 
+            rawHeaders: header,
+            malwareResult: phishingResult,
           });
 
           await newAnalysis.save();
@@ -110,3 +135,5 @@ export class ImapService {
     }
   }
 }
+
+

@@ -16,6 +16,7 @@ let AnalyzedEmail = class AnalyzedEmail {
     receivingChain;
     esp;
     rawHeaders;
+    malwareResult;
     createdAt;
 };
 exports.AnalyzedEmail = AnalyzedEmail;
@@ -35,6 +36,10 @@ __decorate([
     (0, mongoose_1.Prop)({ type: Object }),
     __metadata("design:type", Object)
 ], AnalyzedEmail.prototype, "rawHeaders", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Object }),
+    __metadata("design:type", Object)
+], AnalyzedEmail.prototype, "malwareResult", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ default: Date.now }),
     __metadata("design:type", Date)
