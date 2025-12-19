@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 # 📧 Email Analysis Suite
+=======
+# 📧 Email Analyzer
+Want to Watch: [ESP](https://email-service-provider-w82a.vercel.app/)
+<img width="1893" height="885" alt="image" src="https://github.com/user-attachments/assets/8a2ed160-cf79-45d5-aba6-7fd25049deb2" />
+>>>>>>> 0489496559953400320a550d8b5865d1d80afbbd
 
 A professional-grade **Email Header Analysis and Malware Detection System** designed to identify phishing attempts, analyze email routing, and detect malicious content with high accuracy. This full-stack application combines real-time IMAP monitoring, advanced header forensics, and an AI-powered risk assessment engine.
 
